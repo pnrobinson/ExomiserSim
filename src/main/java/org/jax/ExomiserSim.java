@@ -24,7 +24,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * Hello world!
+ * Run one or multiple phenopacket simulations
  */
 @Parameters(commandDescription = "Simulate VCF Exomiser analysis from phenopacket")
 public class ExomiserSim {
@@ -35,8 +35,6 @@ public class ExomiserSim {
     private String phenopacketPath;
     @Parameter(names = {"-e", "--exomiser"}, description = "path to the Exomiser data directory", required = true)
     private String exomiserPath;
-    @Parameter(names = { "--exomiserdata"}, description = "path to the Exomiser data directory")
-    private String exomiserDatePath;
     @Parameter(names = {"-v", "--template-vcf"}, description = "path to template VCF file", required = true)
     private String templateVcfPath;
     @Parameter(names = {"--phenopacket-dir"}, description = "path to directory with multiple phenopackets")
@@ -141,7 +139,7 @@ public class ExomiserSim {
             return; // skip to next Phenopacket
         }
         File vcfFile = vcfSimulator.getSimulatedVcfOutPath();
-        ExomiserRunner runner = new ExomiserRunner(this.exomiserPath,this.exomiserDatePath,vcfFile,pp);
+        ExomiserRunner runner = new ExomiserRunner(this.exomiserPath,vcfFile,pp);
         runner.writeYAML();
         runner.runExomiser();
 

@@ -12,6 +12,8 @@ public class ExomiserRunner {
     private static final Logger logger = LoggerFactory.getLogger(ExomiserRunner.class);
 
     private final String pathToExomiser;
+    private final File exomiserDir;
+    private final String applicationProp;
     private final File simulatedVcfFile;
     private final Phenopacket phenopacket;
 
@@ -21,18 +23,20 @@ public class ExomiserRunner {
 
     private String stderr = null;
 
-    public ExomiserRunner(String exomiser, String exomiserData, File vcfFile , Phenopacket ppacket){
+    public ExomiserRunner(String exomiser, File vcfFile , Phenopacket ppacket){
         this.pathToExomiser = exomiser;
         this.simulatedVcfFile=vcfFile;
         this.phenopacket=ppacket;
-
+        File f = new File(pathToExomiser);
+        this.exomiserDir = f.getParentFile();
+        this.applicationProp = exomiserDir.getAbsolutePath() + File.separator + "application.properties";
 
     }
 
 
 
     public void writeYAML() {
-        final File yamlPath = new File("simulation.yaml");
+        final File yamlPath = new File("simulation.yml");
         logger.info("Writing YAML file to {}", yamlPath);
         //yamlPath.deleteOnExit();
         try {
@@ -85,7 +89,7 @@ public class ExomiserRunner {
             writer.write("\toutputOptions:\n" +
                     "\t\toutputPassVariantsOnly: false\n" +
                     "\t\tnumGenes: 0\n" +
-                    "\t\toutputPrefix: results/simulation\n" +  // TODO tailor prefix
+                    "\t\toutputPrefix: simulation\n" +  // TODO tailor prefix
                     "\t\toutputFormats: [TSV-GENE, TSV-VARIANT, VCF, HTML]");
             writer.close();
             logger.info("Closing "+yamlPath);
@@ -102,9 +106,9 @@ public class ExomiserRunner {
         args[0]="java";
         args[1]="-jar";
         args[2]=pathToExomiser;
-        args[3]="--exomiser.data-directory=/home/peter/data/exomiser";
+        args[3]=String.format("--spring.config.location=%s",applicationProp);
         args[4]="--analyze";
-        args[5]="simulation.yaml"; // TODO make this parameter
+        args[5]="simulation.yml";
 
 
 
