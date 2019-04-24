@@ -119,8 +119,10 @@ public class ExomiserSim {
 
         Phenopacket pp = readPhenopacket(phenopacketAbsolutePath);
         VcfSimulator vcfSimulator = new VcfSimulator(Paths.get(this.templateVcfPath));
+        // replace spaces and slashes in id
+        String id = "temp_" + pp.getSubject().getId().replaceAll(" ","_").replaceAll("/","-");
         try {
-            HtsFile htsFile = vcfSimulator.simulateVcf(pp.getSubject().getId(), pp.getVariantsList(), genomeAssembly);
+            HtsFile htsFile = vcfSimulator.simulateVcf(id, pp.getVariantsList(), genomeAssembly);
             pp = pp.toBuilder().clearHtsFiles().addHtsFiles(htsFile).build();
         } catch (IOException e) {
             throw new RuntimeException("Could not simulate VCF for phenopacket");
