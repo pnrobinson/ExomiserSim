@@ -1,4 +1,4 @@
-package org.jax;
+package org.jax.exomisersim;
 
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.util.JsonFormat;

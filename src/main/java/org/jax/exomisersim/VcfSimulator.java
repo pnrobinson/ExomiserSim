@@ -1,4 +1,4 @@
-package org.jax;
+package org.jax.exomisersim;
 
 import htsjdk.variant.variantcontext.*;
 import htsjdk.variant.variantcontext.writer.Options;

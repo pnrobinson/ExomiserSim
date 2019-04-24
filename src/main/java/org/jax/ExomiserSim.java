@@ -5,6 +5,8 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 import com.google.protobuf.util.JsonFormat;
+import org.jax.exomisersim.ExomiserRunner;
+import org.jax.exomisersim.VcfSimulator;
 import org.phenopackets.schema.v1.Phenopacket;
 import org.phenopackets.schema.v1.core.Disease;
 import org.phenopackets.schema.v1.core.HtsFile;
@@ -31,7 +33,7 @@ public class ExomiserSim {
     String genomeAssembly = "GRCh37";
     @Parameter(names = {"-p", "--phenopacket"}, description = "path to phenopacket file")
     private String phenopacketPath;
-    @Parameter(names = {"-e", "--exomiser"}, description = "path to the Exomiser data directory")
+    @Parameter(names = {"-e", "--exomiser"}, description = "path to the Exomiser data directory", required = true)
     private String exomiserPath;
     @Parameter(names = { "--exomiserdata"}, description = "path to the Exomiser data directory")
     private String exomiserDatePath;
@@ -77,6 +79,9 @@ public class ExomiserSim {
 
     }
 
+
+
+
     private static Phenopacket readPhenopacket(String phenopacketPath) {
         Path ppPath = Paths.get(phenopacketPath);
         Phenopacket.Builder ppBuilder = Phenopacket.newBuilder();
@@ -107,32 +112,6 @@ public class ExomiserSim {
             throw new RuntimeException("[ERROR] Either the --phenopacket or the --phenopacket-dir option is required");
         }
 
-
-        Phenopacket pp = readPhenopacket(this.phenopacketPath);
-        VcfSimulator vcfSimulator = new VcfSimulator(Paths.get(this.templateVcfPath));
-        try {
-            HtsFile htsFile = vcfSimulator.simulateVcf(pp.getSubject().getId(), pp.getVariantsList(), genomeAssembly);
-            pp = pp.toBuilder().clearHtsFiles().addHtsFiles(htsFile).build();
-        } catch (IOException e) {
-            throw new RuntimeException("Could not simulate VCF for phenopacket");
-        }
-        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
-        Date date = new Date();
-        hasVcf = pp.getHtsFilesList().stream().anyMatch(hf -> hf.getHtsFormat().equals(HtsFile.HtsFormat.VCF));
-        if (pp.getDiseasesCount() != 1) {
-            System.err.println("[ERROR] to run this simulation a phenoopacket must have exactly one disease diagnosis");
-            System.err.println("[ERROR]  " + pp.getSubject().getId() + " had " + pp.getDiseasesCount());
-            return; // skip to next Phenopacket
-        }
-        if (!hasVcf) {
-            System.err.println("[ERROR] Could not simulate VCF"); // should never happen
-            return; // skip to next Phenopacket
-        }
-
-
-
-        Disease diagnosis = pp.getDiseases(0);
-        simulatedDisease = diagnosis.getTerm().getId(); // should be an ID such as OMIM:600102
     }
 
 
@@ -164,6 +143,7 @@ public class ExomiserSim {
         File vcfFile = vcfSimulator.getSimulatedVcfOutPath();
         ExomiserRunner runner = new ExomiserRunner(this.exomiserPath,this.exomiserDatePath,vcfFile,pp);
         runner.writeYAML();
+        runner.runExomiser();
 
     }
 

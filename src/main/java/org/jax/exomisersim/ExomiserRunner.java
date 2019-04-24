@@ -1,17 +1,25 @@
-package org.jax;
+package org.jax.exomisersim;
 
 import org.phenopackets.schema.v1.Phenopacket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class ExomiserRunner {
+    private static final Logger logger = LoggerFactory.getLogger(ExomiserRunner.class);
 
     private final String pathToExomiser;
     private final File simulatedVcfFile;
     private final Phenopacket phenopacket;
+
+    private final int threadNum=1;
+
+    private String stdin = null;
+
+    private String stderr = null;
 
     public ExomiserRunner(String exomiser, String exomiserData, File vcfFile , Phenopacket ppacket){
         this.pathToExomiser = exomiser;
@@ -25,7 +33,8 @@ public class ExomiserRunner {
 
     public void writeYAML() {
         final File yamlPath = new File("simulation.yaml");
-        yamlPath.deleteOnExit();
+        logger.info("Writing YAML file to {}", yamlPath);
+        //yamlPath.deleteOnExit();
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(yamlPath));
             writer.write("analysis:\n");
@@ -78,15 +87,61 @@ public class ExomiserRunner {
                     "\t\tnumGenes: 0\n" +
                     "\t\toutputPrefix: results/simulation\n" +  // TODO tailor prefix
                     "\t\toutputFormats: [TSV-GENE, TSV-VARIANT, VCF, HTML]");
-
+            writer.close();
+            logger.info("Closing "+yamlPath);
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException("Could not open YAML file for writing");
         }
+    }
 
 
 
+    public void runExomiser() {
+        String[] args = new String[6];
+        args[0]="java";
+        args[1]="-jar";
+        args[2]=pathToExomiser;
+        args[3]="--exomiser.data-directory=/home/peter/data/exomiser";
+        args[4]="--analyze";
+        args[5]="simulation.yaml"; // TODO make this parameter
 
+
+
+        String btcomd= Arrays.stream(args).collect(Collectors.joining(" "));
+        logger.trace("Running: "+btcomd);
+
+        String[] dummy=new String[0];
+        try {
+            // we need to provide the Runtime with the directory in which to start
+            // Since we are providing the absolute path of bowtie, we will start in the
+            // current working directory (".").
+            Process process = Runtime.getRuntime().exec(args,dummy,new File("."));
+            BufferedReader stdInput = new BufferedReader(new
+                    InputStreamReader(process.getInputStream()));
+            BufferedReader stdError = new BufferedReader(new
+                    InputStreamReader(process.getErrorStream()));
+            StringBuilder sb = new StringBuilder();
+            String s=null;
+            while ((s = stdInput.readLine()) != null) {
+                sb.append(s+"\n");
+            }
+            this.stdin=sb.toString();
+            sb = new StringBuilder();
+            while ((s = stdError.readLine()) != null) {
+                sb.append(s+"\n");
+            }
+            if (sb.length()>0)
+                this.stderr=sb.toString();
+        } catch (IOException e) {
+            String msg = String.format("Could not run bowtie [%s]",e.getMessage());
+            throw new RuntimeException(msg);
+        }
+        System.out.println("STDOUT="+stdin);
+        System.out.println("STDERR="+stderr);
 
     }
+
+
+
 }
